@@ -44,9 +44,10 @@ Toute la configuration des sources se trouve dans la constante CATEGORIES du fic
 
 Une catégorie regroupe plusieurs flux sous un même thème et possède son propre icône :
 
+```javascript
 { 
     name: "Nom de la Catégorie",
-    icon8: "https://img.icons8.com/fluency/96/votre-icone.png",
+    icon8: "[https://img.icons8.com/fluency/96/votre-icone.png](https://img.icons8.com/fluency/96/votre-icone.png)",
     feeds: [
         // Liste des flux ici
     ] 
@@ -56,7 +57,7 @@ Une catégorie regroupe plusieurs flux sous un même thème et possède son prop
 
 Pour ajouter un projet GitHub à une catégorie existante, insérez un objet dans le tableau feeds :
 
-{ name: "NomDuProjet", url: "https://github.com/Utilisateur/NomDuDepot" }
+{ name: "NomDuProjet", url: "[https://github.com/Utilisateur/NomDuDepot](https://github.com/Utilisateur/NomDuDepot)" }
 
 ### 3. Ajouter une Nouvelle Catégorie
 
@@ -64,10 +65,10 @@ Ajoutez simplement un nouveau bloc dans le tableau CATEGORIES :
 
 { 
     name: "PS5 Tools",
-    icon8: "https://img.icons8.com/fluency/96/wrench.png",
+    icon8: "[https://img.icons8.com/fluency/96/wrench.png](https://img.icons8.com/fluency/96/wrench.png)",
     feeds: [
-        { name: "Outil-1", url: "https://github.com/auteur/outil-1" },
-        { name: "Outil-2", url: "https://github.com/auteur/outil-2" }
+        { name: "Outil-1", url: "[https://github.com/auteur/outil-1](https://github.com/auteur/outil-1)" },
+        { name: "Outil-2", url: "[https://github.com/auteur/outil-2](https://github.com/auteur/outil-2)" }
     ] 
 }
 
