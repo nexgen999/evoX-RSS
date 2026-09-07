@@ -44,7 +44,7 @@ Toute la configuration des sources se trouve dans la constante CATEGORIES du fic
 
 Une catégorie regroupe plusieurs flux sous un même thème et possède son propre icône :
 
-```javascript
+
 { 
     name: "Nom de la Catégorie",
     icon8: "[https://img.icons8.com/fluency/96/votre-icone.png](https://img.icons8.com/fluency/96/votre-icone.png)",
