@@ -139,16 +139,6 @@ main{height:100vh;overflow-y:auto;padding:28px clamp(18px,4vw,55px);min-width:0}
             <a href="https://github.com/nexgen999" target="_blank" class="handle-btn">@nexgen999</a>
           </div>
 
-          <div class="credit-card">
-            <div class="avatar-wrapper">
-              <img src="https://github.com/Michele-M-Media.png" class="avatar-img" alt="Michele Media">
-            </div>
-            <div class="dev-name">Michele Media</div>
-            <div class="dev-role">Développeur & Support technique & Concepteur de l'eboot</div>
-            <a href="https://github.com/Michele-M-Media" target="_blank" class="handle-btn">@MikeleMedia</a>
-          </div>
-        </div>
-
         <div class="credits-footer-text">evoX WebUI Manager · PS5 Edition</div>
       </div>
 
@@ -271,98 +261,33 @@ function fullDate(date){
   return date.toLocaleString("fr-FR", {day:"2-digit", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit"});
 }
 
-// Fetch sécurisé avec proxy de fallback (corsproxy.io -> allorigins)
-async function fetchWithProxy(targetUrl) {
-  const proxies = [
-    `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`
-  ];
-
-  for (const proxyUrl of proxies) {
-    try {
-      const res = await fetch(proxyUrl);
-      if (res.ok) {
-        return await res.text();
-      }
-    } catch (e) {
-      // Continue au proxy suivant en cas d'échec
-    }
-  }
-  throw new Error("Impossible d'atteindre l'URL via les proxys.");
-}
-
+// Emploie directement l'API Rest GitHub (CORS natif)
 async function fetchGitHubReleases(source, categoryName){
   const info = repoInfo(source.url);
   if(!info) return [];
 
-  const atomUrl = `https://github.com/${info.owner}/${info.repo}/releases.atom`;
+  const apiUrl = `https://api.github.com/repos/${info.owner}/${info.repo}/releases`;
 
   try {
-    const xmlText = await fetchWithProxy(atomUrl);
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-    const entries = Array.from(xmlDoc.querySelectorAll("entry"));
-
-    return entries.map(entry => {
-      const title = entry.querySelector("title")?.textContent || `${source.name} — release`;
-      const updated = entry.querySelector("updated")?.textContent || entry.querySelector("published")?.textContent;
-      const link = entry.querySelector("link")?.getAttribute("href") || source.url;
-      const content = entry.querySelector("content")?.textContent || "";
-
-      return {
-        id: link,
-        category: categoryName,
-        source: source.name,
-        sourceUrl: source.url,
-        title: title,
-        date: new Date(updated || Date.now()),
-        link: link,
-        content: content
-      };
+    const res = await fetch(apiUrl, {
+      headers: { "Accept": "application/vnd.github.v3+json" }
     });
-  } catch(e) {
-    console.warn("Erreur Flux GitHub Releases:", source.name, e);
-    return [];
-  }
-}
-
-async function fetchClassicRss(source, categoryName){
-  try {
-    const xmlText = await fetchWithProxy(source.url);
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+    if (!res.ok) return [];
     
-    let items = Array.from(xmlDoc.querySelectorAll("item"));
-    if(items.length === 0) items = Array.from(xmlDoc.querySelectorAll("entry"));
-
-    return items.map(item => {
-      const title = item.querySelector("title")?.textContent || source.name;
-      const dateText = item.querySelector("pubDate")?.textContent || item.querySelector("updated")?.textContent;
-      const link = item.querySelector("link")?.getAttribute("href") || item.querySelector("link")?.textContent || source.url;
-      const content = item.querySelector("description")?.textContent || item.querySelector("content")?.textContent || "";
-
-      return {
-        id: link,
-        category: categoryName,
-        source: source.name,
-        sourceUrl: source.url,
-        title: title,
-        date: new Date(dateText || Date.now()),
-        link: link,
-        content: content
-      };
-    });
+    const releases = await res.json();
+    return releases.map(rel => ({
+      id: rel.html_url,
+      category: categoryName,
+      source: source.name,
+      sourceUrl: source.url,
+      title: rel.name || rel.tag_name || `${source.name} release`,
+      date: new Date(rel.published_at || rel.created_at),
+      link: rel.html_url,
+      content: rel.body ? rel.body.replace(/\r\n/g, "<br>") : "<p>Aucune note de release.</p>"
+    }));
   } catch(e) {
-    console.warn("Erreur Flux RSS Classique:", source.name, e);
+    console.warn("Erreur API GitHub:", source.name, e);
     return [];
-  }
-}
-
-function fetchFeed(source, categoryName){
-  if (repoInfo(source.url)) {
-    return fetchGitHubReleases(source, categoryName);
-  } else {
-    return fetchClassicRss(source, categoryName);
   }
 }
 
@@ -471,7 +396,7 @@ function renderNews(){
           <span>· ${relativeDate(a.date)}</span>
         </div>
         <div class="news-title">${escapeHtml(a.title)}</div>
-        <div class="release-body">${a.content || "<p>Aucune note de release disponible.</p>"}</div>
+        <div class="release-body">${a.content}</div>
         <div class="news-footer">
           <a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">Consulter →</a>
         </div>
@@ -482,7 +407,7 @@ function renderNews(){
 
 async function loadAll(){
   renderSidebar();
-  $("news-list").innerHTML = `<div class="loading">Chargement des releases…</div>`;
+  $("news-list").innerHTML = `<div class="loading">Chargement des releases via l'API…</div>`;
   
   const tasks = [];
   CATEGORIES.forEach(cat => {
@@ -493,15 +418,16 @@ async function loadAll(){
 
   const uniqueTasks = Array.from(new Map(tasks.map(t => [t.feed.url, t])).values());
 
+  // Exécution par lots de 4 requêtes en parallèle sur l'API GitHub
+  const batchSize = 4;
   let fetchedArticles = [];
   
-  // Requêtes séquentielles avec petit délai pour éviter d'être banni/surcharger le proxy
-  for (const t of uniqueTasks) {
-    const res = await fetchFeed(t.feed, t.categoryName);
-    fetchedArticles.push(...res);
+  for (let i = 0; i < uniqueTasks.length; i += batchSize) {
+    const batch = uniqueTasks.slice(i, i + batchSize);
+    const results = await Promise.all(batch.map(t => fetchGitHubReleases(t.feed, t.categoryName)));
+    fetchedArticles.push(...results.flat());
     articles = fetchedArticles.sort((a,b) => b.date - a.date);
     renderNews();
-    await new Promise(r => setTimeout(r, 150)); // pause de 150ms
   }
 
   $("last-update").textContent = `Mis à jour ${new Date().toLocaleTimeString("fr-FR", {hour:"2-digit", minute:"2-digit"})}`;
