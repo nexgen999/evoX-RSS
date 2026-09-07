@@ -139,6 +139,16 @@ main{height:100vh;overflow-y:auto;padding:28px clamp(18px,4vw,55px);min-width:0}
             <a href="https://github.com/nexgen999" target="_blank" class="handle-btn">@nexgen999</a>
           </div>
 
+          <div class="credit-card">
+            <div class="avatar-wrapper">
+              <img src="https://github.com/Michele-M-Media.png" class="avatar-img" alt="Michele Media">
+            </div>
+            <div class="dev-name">Michele Media</div>
+            <div class="dev-role">Développeur & Support technique & Concepteur de l'eboot</div>
+            <a href="https://github.com/Michele-M-Media" target="_blank" class="handle-btn">@MikeleMedia</a>
+          </div>
+        </div>
+
         <div class="credits-footer-text">evoX WebUI Manager · PS5 Edition</div>
       </div>
 
@@ -215,8 +225,6 @@ const CATEGORIES = [
 
 const PLATFORM_ICONS8 = {
   github: "https://img.icons8.com/color/48/github--v1.png",
-  gitlab: "https://img.icons8.com/color/48/gitlab.png",
-  gitea: "https://img.icons8.com/color/48/gitea.png",
   rss: "https://img.icons8.com/color/48/rss.png"
 };
 
@@ -235,21 +243,9 @@ function escapeHtml(v=""){
   return String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 
-function detectPlatformIcon(url=""){
-  const u = url.toLowerCase();
-  if(u.includes("github.com")) return PLATFORM_ICONS8.github;
-  if(u.includes("gitlab")) return PLATFORM_ICONS8.gitlab;
-  if(u.includes("gitea")) return PLATFORM_ICONS8.gitea;
-  return PLATFORM_ICONS8.rss;
-}
-
-function repoInfo(url){
-  const m = url.match(/github\.com\/([^/]+)\/([^/#?]+)/i);
-  return m ? {owner: m[1], repo: m[2]} : null;
-}
-
 function relativeDate(date){
   const ms = Date.now() - date.getTime();
+  if(isNaN(ms)) return "Récemment";
   if(ms < 60000) return "à l'instant";
   if(ms < 3600000) return `il y a ${Math.floor(ms/60000)} min`;
   if(ms < 86400000) return `il y a ${Math.floor(ms/3600000)} h`;
@@ -258,35 +254,34 @@ function relativeDate(date){
 }
 
 function fullDate(date){
+  if(isNaN(date.getTime())) return "Date inconnue";
   return date.toLocaleString("fr-FR", {day:"2-digit", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit"});
 }
 
-// Emploie directement l'API Rest GitHub (CORS natif)
-async function fetchGitHubReleases(source, categoryName){
-  const info = repoInfo(source.url);
-  if(!info) return [];
-
-  const apiUrl = `https://api.github.com/repos/${info.owner}/${info.repo}/releases`;
+// Utilisation du flux ATOM de GitHub converti via rss2json (contourne les limites 403 API)
+async function fetchGitHubAtom(source, categoryName){
+  const atomUrl = `${source.url.replace(/\/$/, "")}/releases.atom`;
+  const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(atomUrl)}`;
 
   try {
-    const res = await fetch(apiUrl, {
-      headers: { "Accept": "application/vnd.github.v3+json" }
-    });
+    const res = await fetch(apiUrl);
     if (!res.ok) return [];
     
-    const releases = await res.json();
-    return releases.map(rel => ({
-      id: rel.html_url,
+    const data = await res.json();
+    if(data.status !== "ok" || !data.items) return [];
+
+    return data.items.map(item => ({
+      id: item.guid || item.link,
       category: categoryName,
       source: source.name,
       sourceUrl: source.url,
-      title: rel.name || rel.tag_name || `${source.name} release`,
-      date: new Date(rel.published_at || rel.created_at),
-      link: rel.html_url,
-      content: rel.body ? rel.body.replace(/\r\n/g, "<br>") : "<p>Aucune note de release.</p>"
+      title: item.title,
+      date: new Date(item.pubDate.replace(' ', 'T')),
+      link: item.link,
+      content: item.content || "<p>Aucune description disponible.</p>"
     }));
   } catch(e) {
-    console.warn("Erreur API GitHub:", source.name, e);
+    console.warn("Erreur chargement Atom:", source.name, e);
     return [];
   }
 }
@@ -386,11 +381,10 @@ function renderNews(){
   }
 
   list.innerHTML = visible.map(a => {
-    const iconUrl = detectPlatformIcon(a.sourceUrl);
     return `
       <article class="news-item">
         <div class="meta">
-          <span class="source"><img src="${iconUrl}" class="icon-img" alt="forge"> ${escapeHtml(a.source)}</span>
+          <span class="source"><img src="${PLATFORM_ICONS8.github}" class="icon-img" alt="forge"> ${escapeHtml(a.source)}</span>
           <span class="badge">Release</span>
           <span>${fullDate(a.date)}</span>
           <span>· ${relativeDate(a.date)}</span>
@@ -398,7 +392,7 @@ function renderNews(){
         <div class="news-title">${escapeHtml(a.title)}</div>
         <div class="release-body">${a.content}</div>
         <div class="news-footer">
-          <a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">Consulter →</a>
+          <a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">Consulter sur GitHub →</a>
         </div>
       </article>
     `;
@@ -407,7 +401,7 @@ function renderNews(){
 
 async function loadAll(){
   renderSidebar();
-  $("news-list").innerHTML = `<div class="loading">Chargement des releases via l'API…</div>`;
+  $("news-list").innerHTML = `<div class="loading">Chargement des releases en cours…</div>`;
   
   const tasks = [];
   CATEGORIES.forEach(cat => {
@@ -418,13 +412,13 @@ async function loadAll(){
 
   const uniqueTasks = Array.from(new Map(tasks.map(t => [t.feed.url, t])).values());
 
-  // Exécution par lots de 4 requêtes en parallèle sur l'API GitHub
-  const batchSize = 4;
+  // Traitement par lots de 3 pour un chargement fluide
+  const batchSize = 3;
   let fetchedArticles = [];
   
   for (let i = 0; i < uniqueTasks.length; i += batchSize) {
     const batch = uniqueTasks.slice(i, i + batchSize);
-    const results = await Promise.all(batch.map(t => fetchGitHubReleases(t.feed, t.categoryName)));
+    const results = await Promise.all(batch.map(t => fetchGitHubAtom(t.feed, t.categoryName)));
     fetchedArticles.push(...results.flat());
     articles = fetchedArticles.sort((a,b) => b.date - a.date);
     renderNews();
