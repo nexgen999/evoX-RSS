@@ -18,7 +18,7 @@
 
 ## 🚀 Présentation
 
-**evoX RSS News** est un tableau de bord moderne conçu pour suivre en temps réel les dernières releases et mises à jour des projets majeurs de la scène PS5 (payloads, loaders, outils DNS, émulateurs, etc.). 
+**evoX RSS News** est une page web simple et moderne conçu pour suivre en temps réel les dernières releases et mises à jour des projets majeurs de la scène PS5 (payloads, loaders, outils DNS, émulateurs, etc.). 
 
 Développé en HTML/CSS/JS natif, l'application fonctionne entièrement côté client sans nécessiter d'installation ni de backend complexe.
 
