@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>evoX RSS News</title>
+<style>
+:root{--bg:#020711;--panel:#07111f;--panel2:#091827;--line:#12345a;--blue:#00aaff;--blue2:#006eff;--text:#f4f8ff;--muted:#7e91aa}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--text);background:var(--bg)}
+body{background:radial-gradient(circle at 75% 10%,#06325c55,transparent 32%),radial-gradient(circle at 90% 85%,#006eff22,transparent 28%),#020711}
+.app{height:100vh;display:grid;grid-template-columns:250px 1fr;overflow:hidden}
+.sidebar{border-right:1px solid #0c2b4b;background:#030a14ee;padding:22px 14px;display:flex;flex-direction:column;height:100vh;overflow-y:auto}
+.logo{font-size:34px;font-weight:800;letter-spacing:-2px;padding:0 14px 25px;cursor:pointer}
+.logo span{color:var(--blue)}
+.side-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;padding:0 14px 9px}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav button{width:100%;display:flex;gap:10px;align-items:center;color:#aebed1;background:transparent;border:0;text-align:left;padding:10px 12px;border-radius:10px;transition:.2s;cursor:pointer;font-size:13px}
+.nav button:hover,.nav button.active{color:#fff;background:linear-gradient(90deg,#006eff35,#00aaff08);box-shadow:inset 2px 0 var(--blue)}
+.nav button.category{font-weight:700}
+.nav button.feed{padding-left:25px;font-size:12px}
+.nav .feed-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);box-shadow:0 0 8px #00aaff;flex:none}
+.nav .chevron{margin-left:auto;color:var(--muted);font-size:12px}
+.icon-img{width:18px;height:18px;object-fit:contain;flex:none}
+
+.sidebar-footer{margin-top:auto;border-top:1px solid #0c2b4b;padding-top:14px;display:flex;flex-direction:column;gap:10px}
+.credit-nav-btn{width:100%;display:flex;gap:10px;align-items:center;color:#aebed1;background:transparent;border:1px solid transparent;text-align:left;padding:10px 12px;border-radius:10px;transition:.2s;cursor:pointer;font-size:13px}
+.credit-nav-btn:hover,.credit-nav-btn.active{color:#fff;background:linear-gradient(90deg,#006eff35,#00aaff08);box-shadow:inset 2px 0 var(--blue);border-color:#12345a}
+
+.lang-selector{display:flex;align-items:center;gap:8px;background:#040d18;border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin-top:4px}
+.lang-selector select{background:transparent;border:none;color:var(--text);font-size:12px;width:100%;outline:none;cursor:pointer}
+.lang-selector select option{background:var(--panel2);color:var(--text)}
+
+main{height:100vh;overflow-y:auto;padding:28px clamp(18px,4vw,55px);min-width:0}
+.main-wrapper{max-width:1250px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:24px}
+.kicker{color:var(--blue);font-size:12px;letter-spacing:3px;text-transform:uppercase}
+.title{font-size:clamp(34px,5vw,58px);line-height:1;margin:8px 0 9px;letter-spacing:-3px}
+.subtitle{color:var(--muted);font-size:14px}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{background:#030a14;border:1px solid var(--line);color:#d9e8f8;padding:9px 13px;border-radius:10px;cursor:pointer;font-size:12px}
+.btn:hover,.btn.active{border-color:var(--blue);color:#fff;background:#007bff20}
+.news-panel{background:#040d18cc;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.panel-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.panel-head h2{margin:0;font-size:15px}
+.panel-head span{font-size:11px;color:var(--muted)}
+.news-list{display:flex;flex-direction:column}
+.news-item{padding:19px 21px;border-bottom:1px solid #0d2842;transition:.18s}
+.news-item:last-child{border-bottom:0}
+.news-item:hover{background:#071827}
+.meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-bottom:8px}
+.source{color:var(--blue);background:#007bff15;border:1px solid #1477b933;padding:3px 7px;border-radius:6px;font-weight:700;display:inline-flex;align-items:center;gap:6px}
+.badge{color:#8bd5ff;background:#007bff18;border:1px solid #007bff35;padding:3px 7px;border-radius:6px}
+.news-title{font-size:19px;font-weight:700;line-height:1.35;margin-bottom:8px}
+.release-body{margin-top:16px;padding-top:16px;border-top:1px solid #12345a;font-size:13px;line-height:1.7;color:#d2deeb;overflow-wrap:anywhere}
+.release-body img{max-width:100%;height:auto;border-radius:8px}
+.release-body h1,.release-body h2,.release-body h3{color:#fff}
+.release-body a{color:var(--blue)}
+.release-body pre,.release-body code{white-space:pre-wrap;overflow-wrap:anywhere;background:#020711;border:1px solid #12345a;border-radius:7px;padding:8px}
+.news-footer{display:flex;align-items:center;gap:8px;margin-top:14px}
+.news-footer a{display:inline-block;text-decoration:none;background:#007bff12;border:1px solid #174d78;color:#bfe7ff;padding:7px 10px;border-radius:8px;font-size:11px;cursor:pointer}
+.news-footer a:hover{border-color:var(--blue);background:#007bff25;color:#fff}
+
+.credits-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;margin-top:30px}
+.credit-card{background:#040d1888;border:1px solid var(--line);border-radius:20px;padding:40px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:.3s}
+.credit-card:hover{border-color:var(--blue);transform:translateY(-2px)}
+.avatar-wrapper{width:110px;height:110px;border-radius:50%;padding:3px;background:linear-gradient(135deg,var(--blue),#a100ff);margin-bottom:20px}
+.avatar-img{width:100%;height:100%;border-radius:50%;object-fit:cover;background:#020711}
+.dev-name{font-size:22px;font-weight:800;color:#fff;margin-bottom:8px}
+.dev-role{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.4;max-width:260px}
+.handle-btn{background:#006eff20;border:1px solid #006eff55;color:var(--blue);padding:8px 18px;border-radius:10px;font-size:12px;text-decoration:none;transition:.2s}
+.handle-btn:hover{background:var(--blue);color:#fff}
+.credits-footer-text{text-align:center;color:#3d536b;font-size:12px;margin-top:60px}
+
+.hidden{display:none !important}
+.empty,.loading{padding:45px 25px;text-align:center;color:var(--muted)}
+
+@media(max-width:750px){
+  .app{grid-template-columns:1fr;height:auto;overflow:visible}
+  .sidebar{height:auto;border-right:0;border-bottom:1px solid #0c2b4b;padding:12px;overflow:visible}
+  .logo{padding:0 8px 12px;font-size:28px}
+  .nav{max-height:260px;overflow-y:auto}
+  main{height:auto;overflow:visible;padding:20px 12px}
+  .top{flex-direction:column}
+  .title{font-size:40px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo" id="logo-btn">evo<span>X</span></div>
+    <div class="side-title" id="txt-side-title">Flux RSS</div>
+    <nav class="nav" id="feed-nav"></nav>
+    <div class="sidebar-footer">
+      <div class="lang-selector">
+        <img src="https://img.icons8.com/color/48/globe--v1.png" class="icon-img" alt="lang">
+        <select id="lang-select" onchange="changeLanguage(this.value)">
+          <option value="fr">Français</option>
+          <option value="en">English</option>
+          <option value="de">Deutsch</option>
+          <option value="es">Español</option>
+          <option value="it">Italiano</option>
+          <option value="zh">中文</option>
+          <option value="ja">日本語</option>
+          <option value="ko">한국어</option>
+        </select>
+      </div>
+      <button class="credit-nav-btn" id="credits-tab-btn">
+        <img src="https://img.icons8.com/color/48/star--v1.png" class="icon-img" alt="star">
+        <span id="txt-nav-credits">Crédits</span>
+      </button>
+    </div>
+  </aside>
+
+  <main>
+    <div class="main-wrapper">
+      <div id="view-news">
+        <section class="top">
+          <div>
+            <div class="kicker" id="txt-kicker">Écosystème evoX</div>
+            <div class="title" id="txt-title">Actualités RSS evoX</div>
+            <div class="subtitle" id="txt-subtitle">Dernières versions de vos dépôts, du plus récent au plus ancien.</div>
+          </div>
+          <div class="actions">
+            <span class="btn" id="last-update">Chargement…</span>
+            <button class="btn" id="refresh">↻ Actualiser</button>
+          </div>
+        </section>
+
+        <section class="news-panel">
+          <div class="panel-head">
+            <h2 id="txt-panel-head">Articles</h2>
+            <span id="article-count">—</span>
+          </div>
+          <div class="news-list" id="news-list"></div>
+        </section>
+      </div>
+
+      <div id="view-credits" class="hidden">
+        <section class="top" style="text-align: center;">
+          <div>
+            <div class="kicker" id="txt-credits-kicker">À propos</div>
+            <div class="title" id="txt-credits-title">Crédits</div>
+            <div class="subtitle" id="txt-credits-subtitle">Développeur et créateur du projet.</div>
+          </div>
+        </section>
+
+        <div class="credits-grid" style="display: flex; justify-content: center; margin-top: 30px;">
+          <div class="credit-card" style="max-width: 420px; width: 100%;">
+            <div class="avatar-wrapper">
+              <img src="https://github.com/nexgen999.png" class="avatar-img" alt="nexgen999">
+            </div>
+            <div class="dev-name">nexgen999</div>
+            <div class="dev-role" id="txt-dev-role">Développeur Principal & Designer Écosystème</div>
+            <a href="https://github.com/nexgen999" target="_blank" class="handle-btn">@nexgen999</a>
+          </div>
+        </div>
+
+        <div class="credits-footer-text" style="text-align: center; color: #3d536b; font-size: 12px; margin-top: 60px;">
+          evoX WebUI Manager · PS5 Edition
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+const TRANSLATIONS = {
+  fr: {
+    sideTitle: "Flux RSS",
+    allFeeds: "Tous les flux",
+    credits: "Crédits",
+    kicker: "Écosystème evoX",
+    title: "Actualités RSS evoX",
+    subtitle: "Dernières versions de vos dépôts, du plus récent au plus ancien.",
+    refresh: "↻ Actualiser",
+    panelHead: "Articles",
+    creditsKicker: "À propos",
+    creditsTitle: "Crédits",
+    creditsSubtitle: "Développeur et créateur du projet.",
+    devRole: "Développeur Principal & Designer Écosystème",
+    loading: "Chargement en cours…",
+    loadingReleases: "Chargement des publications…",
+    updated: "Mis à jour à",
+    noNodes: "Aucune publication trouvée pour ce filtre.",
+    noDesc: "Aucune description disponible.",
+    viewGithub: "Voir sur GitHub →",
+    articleSingular: "article",
+    articlePlural: "articles",
+    releaseBadge: "Version",
+    justNow: "à l'instant",
+    mAgo: "m",
+    hAgo: "h",
+    dAgo: "j",
+    recently: "Récemment",
+    unknownDate: "Date inconnue",
+    locale: "fr-FR"
+  },
+  en: {
+    sideTitle: "RSS Feeds",
+    allFeeds: "All Feeds",
+    credits: "Credits",
+    kicker: "evoX ecosystem",
+    title: "evoX RSS News",
+    subtitle: "Latest releases from your repositories, from newest to oldest.",
+    refresh: "↻ Refresh",
+    panelHead: "News",
+    creditsKicker: "About",
+    creditsTitle: "Credits",
+    creditsSubtitle: "Developer and creator of the project.",
+    devRole: "Lead Developer & Ecosystem Designer",
+    loading: "Loading…",
+    loadingReleases: "Loading releases…",
+    updated: "Updated at",
+    noNodes: "No releases found for this filter.",
+    noDesc: "No description available.",
+    viewGithub: "View on GitHub →",
+    articleSingular: "article",
+    articlePlural: "articles",
+    releaseBadge: "Release",
+    justNow: "just now",
+    mAgo: "m ago",
+    hAgo: "h ago",
+    dAgo: "d ago",
+    recently: "Recently",
+    unknownDate: "Unknown date",
+    locale: "en-US"
+  },
+  de: {
+    sideTitle: "RSS-Feeds",
+    allFeeds: "Alle Feeds",
+    credits: "Mitwirkende",
+    kicker: "evoX-Ökosystem",
+    title: "evoX RSS-News",
+    subtitle: "Neueste Veröffentlichungen aus Ihren Repositories.",
+    refresh: "↻ Aktualisieren",
+    panelHead: "Artikel",
+    creditsKicker: "Über",
+    creditsTitle: "Mitwirkende",
+    creditsSubtitle: "Entwickler und Ersteller des Projekts.",
+    devRole: "Hauptentwickler & Ökosystem-Designer",
+    loading: "Laden…",
+    loadingReleases: "Veröffentlichungen werden geladen…",
+    updated: "Aktualisiert um",
+    noNodes: "Keine Veröffentlichungen für diesen Filter gefunden.",
+    noDesc: "Keine Beschreibung verfügbar.",
+    viewGithub: "Auf GitHub ansehen →",
+    articleSingular: "Artikel",
+    articlePlural: "Artikel",
+    releaseBadge: "Release",
+    justNow: "gerade eben",
+    mAgo: "Min. ago",
+    hAgo: "Std. ago",
+    dAgo: "T. ago",
+    recently: "Vor kurzem",
+    unknownDate: "Unbekanntes Datum",
+    locale: "de-DE"
+  },
+  es: {
+    sideTitle: "Canales RSS",
+    allFeeds: "Todos los canales",
+    credits: "Créditos",
+    kicker: "Ecosistema evoX",
+    title: "Noticias RSS evoX",
+    subtitle: "Últimas publicaciones de tus repositorios, de más reciente a más antiguo.",
+    refresh: "↻ Actualizar",
+    panelHead: "Artículos",
+    creditsKicker: "Acerca de",
+    creditsTitle: "Créditos",
+    creditsSubtitle: "Desarrollador y creador del proyecto.",
+    devRole: "Desarrollador Principal y Diseñador del Ecosistema",
+    loading: "Cargando…",
+    loadingReleases: "Cargando publicaciones…",
+    updated: "Actualizado a las",
+    noNodes: "No se encontraron publicaciones para este filtro.",
+    noDesc: "Sin descripción disponible.",
+    viewGithub: "Ver en GitHub →",
+    articleSingular: "artículo",
+    articlePlural: "artículos",
+    releaseBadge: "Versión",
+    justNow: "ahora mismo",
+    mAgo: "m",
+    hAgo: "h",
+    dAgo: "d",
+    recently: "Recientemente",
+    unknownDate: "Fecha desconocida",
+    locale: "es-ES"
+  },
+  it: {
+    sideTitle: "Feed RSS",
+    allFeeds: "Tutti i feed",
+    credits: "Crediti",
+    kicker: "Ecosistema evoX",
+    title: "Notizie RSS evoX",
+    subtitle: "Ultime release dai tuoi repository, dalla più recente alla più datata.",
+    refresh: "↻ Aggiorna",
+    panelHead: "Articoli",
+    creditsKicker: "Informazioni",
+    creditsTitle: "Crediti",
+    creditsSubtitle: "Sviluppatore e creatore del progetto.",
+    devRole: "Sviluppatore Principale & Designer dell'Ecosistema",
+    loading: "Caricamento…",
+    loadingReleases: "Caricamento release…",
+    updated: "Aggiornato alle",
+    noNodes: "Nessuna release trovata per questo filtro.",
+    noDesc: "Nessuna descrizione disponibile.",
+    viewGithub: "Vedi su GitHub →",
+    articleSingular: "articolo",
+    articlePlural: "articoli",
+    releaseBadge: "Release",
+    justNow: "proprio ora",
+    mAgo: "m fa",
+    hAgo: "h fa",
+    dAgo: "g fa",
+    recently: "Recentemente",
+    unknownDate: "Data sconosciuta",
+    locale: "it-IT"
+  },
+  zh: {
+    sideTitle: "RSS 订阅源",
+    allFeeds: "所有订阅",
+    credits: "致谢",
+    kicker: "evoX 生态系统",
+    title: "evoX RSS 新闻",
+    subtitle: "存储库的最新发布，按时间倒序排列。",
+    refresh: "↻ 刷新",
+    panelHead: "文章",
+    creditsKicker: "关于",
+    creditsTitle: "致谢",
+    creditsSubtitle: "项目开发者与构建者。",
+    devRole: "首席开发者与生态系统设计师",
+    loading: "加载中…",
+    loadingReleases: "正在加载发布内容…",
+    updated: "更新于",
+    noNodes: "未找到该筛选条件下的发布。",
+    noDesc: "暂无说明。",
+    viewGithub: "在 GitHub 上查看 →",
+    articleSingular: "篇文章",
+    articlePlural: "篇文章",
+    releaseBadge: "版本",
+    justNow: "刚刚",
+    mAgo: "分钟前",
+    hAgo: "小时前",
+    dAgo: "天前",
+    recently: "最近",
+    unknownDate: "未知日期",
+    locale: "zh-CN"
+  },
+  ja: {
+    sideTitle: "RSS フィード",
+    allFeeds: "すべてのフィード",
+    credits: "クレジット",
+    kicker: "evoX エコシステム",
+    title: "evoX RSS ニュース",
+    subtitle: "リポジトリの最新リリース（新着順）。",
+    refresh: "↻ 更新",
+    panelHead: "記事",
+    creditsKicker: "概要",
+    creditsTitle: "クレジット",
+    creditsSubtitle: "プロジェクトの開発者および制作者。",
+    devRole: "リードデベロッパー & エコシステムデザイナー",
+    loading: "読み込み中…",
+    loadingReleases: "リリースを読み込んでいます…",
+    updated: "更新日時:",
+    noNodes: "該当するリリースが見つかりませんでした。",
+    noDesc: "説明はありません。",
+    viewGithub: "GitHub で見る →",
+    articleSingular: "件の記事",
+    articlePlural: "件の記事",
+    releaseBadge: "リリース",
+    justNow: "たった今",
+    mAgo: "分前",
+    hAgo: "時間前",
+    dAgo: "日前",
+    recently: "最近",
+    unknownDate: "不明な日付",
+    locale: "ja-JP"
+  },
+  ko: {
+    sideTitle: "RSS 피드",
+    allFeeds: "모든 피드",
+    credits: "크레딧",
+    kicker: "evoX 생태계",
+    title: "evoX RSS 뉴스",
+    subtitle: "저장소의 최신 릴리스 (최신순).",
+    refresh: "↻ 새로고침",
+    panelHead: "기사",
+    creditsKicker: "정보",
+    creditsTitle: "크레딧",
+    creditsSubtitle: "프로젝트 개발자 및 제작자.",
+    devRole: "리드 개발자 & 생태계 디자이너",
+    loading: "로딩 중…",
+    loadingReleases: "릴리스 로딩 중…",
+    updated: "업데이트 시각:",
+    noNodes: "이 필터에 대한 릴리스가 없습니다.",
+    noDesc: "설명이 없습니다.",
+    viewGithub: "GitHub에서 보기 →",
+    articleSingular: "개 기사",
+    articlePlural: "개 기사",
+    releaseBadge: "릴리스",
+    justNow: "방금 전",
+    mAgo: "분 전",
+    hAgo: "시간 전",
+    dAgo: "일 전",
+    recently: "최근",
+    unknownDate: "알 수 없는 날짜",
+    locale: "ko-KR"
+  }
+};
+
+let currentLang = "fr";
+
+const CATEGORIES = [
+    { 
+        name: "PS5-payload-dev",
+        icon8: "https://img.icons8.com/fluency/96/server--v1.png",
+        feeds: [
+            { name: "elfldr", url: "https://github.com/ps5-payload-dev/elfldr" },
+            { name: "ftpsrv", url: "https://github.com/ps5-payload-dev/ftpsrv" },
+            { name: "websrv", url: "https://github.com/ps5-payload-dev/websrv" },
+            { name: "klogsrv", url: "https://github.com/ps5-payload-dev/klogsrv" },
+            { name: "gdbsrv", url: "https://github.com/ps5-payload-dev/gdbsrv" },
+            { name: "shsrv", url: "https://github.com/ps5-payload-dev/shsrv" },
+            { name: "svtplay", url: "https://github.com/ps5-payload-dev/svtplay" }
+        ] 
+    },
+    { 
+        name: "PS5 DNS",
+        icon8: "https://img.icons8.com/fluency/96/dns.png",
+        feeds: [
+            { name: "nanoDNS", url: "https://github.com/drakmor/nanoDNS" },
+            { name: "chukei-dns", url: "https://github.com/Al-Azif/chukei-dns" }
+        ] 
+    },
+    { 
+        name: "HEN Loader",
+        icon8: "https://img.icons8.com/fluency/96/home.png",
+        feeds: [
+            { name: "ps5-payload-manager", url: "https://github.com/itsPLK/ps5-payload-manager" },
+            { name: "ps5-unified-autoloader", url: "https://github.com/itsPLK/ps5-unified-autoloader" },
+            { name: "ProsperoMgr", url: "https://github.com/notmaj0r/ProsperoMgr" },
+            { name: "etaHEN", url: "https://github.com/etaHEN/etaHEN" },
+            { name: "onionHEN", url: "https://github.com/aydencharles/onionHEN" },
+            { name: "PIZZA-HEN", url: "https://github.com/Michele-M-Media/PIZZA-HEN" },
+            { name: "kura", url: "https://github.com/NookieAI/kura" }
+        ] 
+    },
+    { 
+        name: "PS5 Essential",
+        icon8: "https://img.icons8.com/fluency/48/play-station--v2.png",
+        feeds: [
+            { name: "nanoDNS", url: "https://github.com/drakmor/nanoDNS" },
+            { name: "kstuff-lite_EchoStretch", url: "https://github.com/EchoStretch/kstuff-lite" },
+            { name: "kstuff-lite_drakmor", url: "https://github.com/drakmor/kstuff-lite" },
+            { name: "ShadowMountPlus", url: "https://github.com/drakmor/ShadowMountPlus" },
+            { name: "zftpd", url: "https://github.com/seregonwar/zftpd" }
+        ] 
+    },
+    { 
+        name: "PS5 Game Compatibility",
+        icon8: "https://img.icons8.com/fluency/96/settings.png",
+        feeds: [
+            { name: "BackPork", url: "https://github.com/BestPig/BackPork" },
+            { name: "ampr_emu", url: "https://github.com/drakmor/ampr_emu" },
+            { name: "apr-emu-updater", url: "https://github.com/tsuramatsu1/apr-emu-updater" }
+        ] 
+    },
+    { 
+        name: "PS5 FreeShop",
+        icon8: "https://img.icons8.com/fluency/96/shopping-bag.png",
+        feeds: [
+            { name: "Spectrum-Library", url: "https://github.com/Phoenixx1202/Spectrum-Library" },
+            { name: "Spectrum-Library-PC", url: "https://github.com/Phoenixx1202/Spectrum-Library-PC" },
+            { name: "Pegasus-dl", url: "https://github.com/pegasus-ps5/pegasus-dl" }
+        ] 
+    }
+];
+
+const PLATFORM_ICONS8 = {
+  github: "https://img.icons8.com/color/48/github--v1.png",
+  rss: "https://img.icons8.com/color/48/rss.png"
+};
+
+let articles = [];
+let activeFilter = { type: "all", value: "all" };
+let collapsedCategories = {};
+let currentTab = "news";
+
+CATEGORIES.forEach(cat => {
+  collapsedCategories[cat.name] = true;
+});
+
+const $ = id => document.getElementById(id);
+
+function escapeHtml(v=""){
+  return String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function changeLanguage(lang){
+  if(!TRANSLATIONS[lang]) return;
+  currentLang = lang;
+  document.documentElement.lang = lang;
+  
+  const t = TRANSLATIONS[lang];
+  $("txt-side-title").textContent = t.sideTitle;
+  $("txt-nav-credits").textContent = t.credits;
+  $("txt-kicker").textContent = t.kicker;
+  $("txt-title").textContent = t.title;
+  $("txt-subtitle").textContent = t.subtitle;
+  $("refresh").textContent = t.refresh;
+  $("txt-panel-head").textContent = t.panelHead;
+  $("txt-credits-kicker").textContent = t.creditsKicker;
+  $("txt-credits-title").textContent = t.creditsTitle;
+  $("txt-credits-subtitle").textContent = t.creditsSubtitle;
+  $("txt-dev-role").textContent = t.devRole;
+
+  renderSidebar();
+  renderNews();
+}
+
+function relativeDate(date){
+  const t = TRANSLATIONS[currentLang];
+  const ms = Date.now() - date.getTime();
+  if(isNaN(ms)) return t.recently;
+  if(ms < 60000) return t.justNow;
+  if(ms < 3600000) return `${Math.floor(ms/60000)}${t.mAgo}`;
+  if(ms < 86400000) return `${Math.floor(ms/3600000)}${t.hAgo}`;
+  if(ms < 604800000) return `${Math.floor(ms/86400000)}${t.dAgo}`;
+  return date.toLocaleDateString(t.locale, {day:"2-digit", month:"short", year:"numeric"});
+}
+
+function fullDate(date){
+  const t = TRANSLATIONS[currentLang];
+  if(isNaN(date.getTime())) return t.unknownDate;
+  return date.toLocaleString(t.locale, {day:"2-digit", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit"});
+}
+
+async function fetchGitHubAtom(source, categoryName){
+  const atomUrl = `${source.url.replace(/\/$/, "")}/releases.atom`;
+  const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(atomUrl)}`;
+
+  try {
+    const res = await fetch(apiUrl);
+    if (!res.ok) return [];
+    
+    const data = await res.json();
+    if(data.status !== "ok" || !data.items) return [];
+
+    const t = TRANSLATIONS[currentLang];
+    return data.items.map(item => ({
+      id: item.guid || item.link,
+      category: categoryName,
+      source: source.name,
+      sourceUrl: source.url,
+      title: item.title,
+      date: new Date(item.pubDate.replace(' ', 'T')),
+      link: item.link,
+      content: item.content || `<p>${t.noDesc}</p>`
+    }));
+  } catch(e) {
+    console.warn("Error loading Atom:", source.name, e);
+    return [];
+  }
+}
+
+function toggleCategory(name, event){
+  if(event) event.stopPropagation();
+  collapsedCategories[name] = !collapsedCategories[name];
+  renderSidebar();
+}
+
+function selectCategory(name){
+  activeFilter = { type: "category", value: name };
+  switchTab("news");
+  renderNews();
+}
+
+function selectFeed(name){
+  activeFilter = { type: "feed", value: name };
+  switchTab("news");
+  renderNews();
+}
+
+function selectAll(){
+  activeFilter = { type: "all", value: "all" };
+  switchTab("news");
+  renderNews();
+}
+
+function switchTab(tab){
+  currentTab = tab;
+  if(tab === "news"){
+    $("view-news").classList.remove("hidden");
+    $("view-credits").classList.add("hidden");
+    $("credits-tab-btn").classList.remove("active");
+  } else {
+    $("view-news").classList.add("hidden");
+    $("view-credits").classList.remove("hidden");
+    $("credits-tab-btn").classList.add("active");
+  }
+  renderSidebar();
+}
+
+function renderSidebar(){
+  const t = TRANSLATIONS[currentLang];
+  const nav = $("feed-nav");
+  nav.innerHTML = "";
+
+  const all = document.createElement("button");
+  all.className = (activeFilter.type === "all" && currentTab === "news") ? "active" : "";
+  all.innerHTML = `<span class="feed-dot"></span><span>${t.allFeeds}</span>`;
+  all.onclick = selectAll;
+  nav.appendChild(all);
+
+  CATEGORIES.forEach(cat => {
+    const head = document.createElement("button");
+    const isActive = (activeFilter.type === "category" && activeFilter.value === cat.name && currentTab === "news");
+    head.className = "category " + (isActive ? "active" : "");
+    
+    const iconImg = cat.icon8 ? `<img src="${cat.icon8}" class="icon-img" alt="icon">` : "";
+    const toggleIcon = collapsedCategories[cat.name] ? "▸" : "▾";
+    
+    head.innerHTML = `<span class="toggle-btn" onclick="toggleCategory('${escapeHtml(cat.name)}', event)">${toggleIcon}</span>${iconImg}<span>${escapeHtml(cat.name)}</span><span class="chevron">${cat.feeds.length}</span>`;
+    head.onclick = () => selectCategory(cat.name);
+    nav.appendChild(head);
+
+    if(!collapsedCategories[cat.name]){
+      cat.feeds.forEach(feed => {
+        const b = document.createElement("button");
+        const isFeedActive = (activeFilter.type === "feed" && activeFilter.value === feed.name && currentTab === "news");
+        b.className = "feed " + (isFeedActive ? "active" : "");
+        b.innerHTML = `<span class="feed-dot"></span><span>${escapeHtml(feed.name)}</span>`;
+        b.title = feed.url;
+        b.onclick = () => selectFeed(feed.name);
+        nav.appendChild(b);
+      });
+    }
+  });
+}
+
+function visibleArticles(){
+  if(activeFilter.type === "category"){
+    return articles.filter(a => a.category === activeFilter.value);
+  }
+  if(activeFilter.type === "feed"){
+    return articles.filter(a => a.source === activeFilter.value);
+  }
+  return articles;
+}
+
+function renderNews(){
+  const t = TRANSLATIONS[currentLang];
+  const list = $("news-list");
+  const visible = visibleArticles();
+  const labelArticle = visible.length > 1 ? t.articlePlural : t.articleSingular;
+  
+  $("article-count").textContent = `${visible.length} ${labelArticle}`;
+
+  if(!visible.length){
+    list.innerHTML = `<div class="empty">${t.noNodes}</div>`;
+    return;
+  }
+
+  list.innerHTML = visible.map(a => {
+    return `
+      <article class="news-item">
+        <div class="meta">
+          <span class="source"><img src="${PLATFORM_ICONS8.github}" class="icon-img" alt="forge"> ${escapeHtml(a.source)}</span>
+          <span class="badge">${t.releaseBadge}</span>
+          <span>${fullDate(a.date)}</span>
+          <span>· ${relativeDate(a.date)}</span>
+        </div>
+        <div class="news-title">${escapeHtml(a.title)}</div>
+        <div class="release-body">${a.content}</div>
+        <div class="news-footer">
+          <a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${t.viewGithub}</a>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+async function loadAll(){
+  const t = TRANSLATIONS[currentLang];
+  renderSidebar();
+  $("news-list").innerHTML = `<div class="loading">${t.loadingReleases}</div>`;
+  $("last-update").textContent = t.loading;
+  
+  const tasks = [];
+  CATEGORIES.forEach(cat => {
+    cat.feeds.forEach(feed => {
+      tasks.push({ feed, categoryName: cat.name });
+    });
+  });
+
+  const uniqueTasks = Array.from(new Map(tasks.map(t => [t.feed.url, t])).values());
+
+  const batchSize = 3;
+  let fetchedArticles = [];
+  
+  for (let i = 0; i < uniqueTasks.length; i += batchSize) {
+    const batch = uniqueTasks.slice(i, i + batchSize);
+    const results = await Promise.all(batch.map(t => fetchGitHubAtom(t.feed, t.categoryName)));
+    fetchedArticles.push(...results.flat());
+    articles = fetchedArticles.sort((a,b) => b.date - a.date);
+    renderNews();
+  }
+
+  const now = new Date();
+  $("last-update").textContent = `${t.updated} ${now.toLocaleTimeString(t.locale, {hour:"2-digit", minute:"2-digit"})}`;
+}
+
+$("logo-btn").onclick = () => switchTab("news");
+$("credits-tab-btn").onclick = () => switchTab("credits");
+$("refresh").onclick = loadAll;
+
+changeLanguage("fr");
+loadAll();
+</script>
+</body>
+</html>
