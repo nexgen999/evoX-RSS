@@ -681,19 +681,19 @@ const TRANSLATIONS = {
     allFeeds: "Tüm Akışlar",
     credits: "Emeği Geçenler",
     kicker: "evoX Ekosistemi",
-    title: "evoX RSS Haberleri",
-    subtitle: "Depolarınızdan en son sürümler, en yeniden en eskiye.",
+    title: "evoX RSS Akışları",
+    subtitle: "En yeniden en eskiye doğru depolarınızdan en son sürümler.",
     refresh: "↻ Yenile",
     panelHead: "Makaleler",
     creditsKicker: "Hakkında",
     creditsTitle: "Emeği Geçenler",
     creditsSubtitle: "Projenin geliştiricisi ve yaratıcısı.",
-    devRole: "Lider Geliştirici ve Ekosistem Tasarımcısı",
+    devRole: "Baş Geliştirici & Ekosistem Mimarı",
     loading: "Yükleniyor…",
     loadingReleases: "Sürümler yükleniyor…",
-    updated: "Güncellenme:",
-    noNodes: "Bu filtre için sürüm bulunamadı.",
-    noDesc: "Açıklama yok.",
+    updated: "Son Güncelleme:",
+    noNodes: "Bu akışla ilişkilendirilmiş sürüm notu bulunamadı.",
+    noDesc: "Açıklama bulunmuyor.",
     viewGithub: "GitHub'da Görüntüle →",
     articleSingular: "makale",
     articlePlural: "makale",
@@ -785,6 +785,7 @@ let articles = [];
 let activeFilter = { type: "all", value: "all" };
 let collapsedCategories = {};
 let currentTab = "news";
+let lastUpdateTime = null;
 
 CATEGORIES.forEach(cat => {
   collapsedCategories[cat.name] = true;
@@ -815,9 +816,20 @@ function changeLanguage(lang){
   $("txt-credits-title").textContent = t.creditsTitle;
   $("txt-credits-subtitle").textContent = t.creditsSubtitle;
   $("txt-dev-role").textContent = t.devRole;
+  updateLastUpdate();
 
   renderSidebar();
   renderNews();
+}
+
+function updateLastUpdate(){
+  const t = TRANSLATIONS[currentLang];
+  const lastUpdate = $("last-update");
+  if(!lastUpdateTime){
+    lastUpdate.textContent = t.loading;
+    return;
+  }
+  lastUpdate.textContent = `${t.updated} ${lastUpdateTime.toLocaleTimeString(t.locale, {hour:"2-digit", minute:"2-digit"})}`;
 }
 
 function relativeDate(date){
@@ -986,7 +998,7 @@ async function loadAll(){
   const t = TRANSLATIONS[currentLang];
   renderSidebar();
   $("news-list").innerHTML = `<div class="loading">${t.loadingReleases}</div>`;
-  $("last-update").textContent = t.loading;
+  updateLastUpdate();
   
   const tasks = [];
   CATEGORIES.forEach(cat => {
@@ -1008,8 +1020,8 @@ async function loadAll(){
     renderNews();
   }
 
-  const now = new Date();
-  $("last-update").textContent = `${t.updated} ${now.toLocaleTimeString(t.locale, {hour:"2-digit", minute:"2-digit"})}`;
+  lastUpdateTime = new Date();
+  updateLastUpdate();
 }
 
 $("logo-btn").onclick = () => switchTab("news");
