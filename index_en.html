@@ -86,12 +86,12 @@ main{height:100vh;overflow-y:auto;padding:28px clamp(18px,4vw,55px);min-width:0}
 <div class="app">
   <aside class="sidebar">
     <div class="logo" id="logo-btn">evo<span>X</span></div>
-    <div class="side-title">Flux RSS</div>
+    <div class="side-title">RSS Feeds</div>
     <nav class="nav" id="feed-nav"></nav>
     <div class="sidebar-footer">
       <button class="credit-nav-btn" id="credits-tab-btn">
         <img src="https://img.icons8.com/color/48/star--v1.png" class="icon-img" alt="star">
-        <span>Crédits</span>
+        <span>Credits</span>
       </button>
     </div>
   </aside>
@@ -103,7 +103,7 @@ main{height:100vh;overflow-y:auto;padding:28px clamp(18px,4vw,55px);min-width:0}
           <div>
             <div class="kicker">evoX ecosystem</div>
             <div class="title">evoX RSS News</div>
-            <div class="subtitle">The latest releases from your repositories, from newest to oldest.</div>
+            <div class="subtitle">Latest releases from your repositories, from newest to oldest.</div>
           </div>
           <div class="actions">
             <span class="btn" id="last-update">Loading…</span>
@@ -121,29 +121,29 @@ main{height:100vh;overflow-y:auto;padding:28px clamp(18px,4vw,55px);min-width:0}
       </div>
 
       <div id="view-credits" class="hidden">
-  <section class="top" style="text-align: center;">
-    <div>
-      <div class="kicker">About</div>
-      <div class="title">Crédits</div>
-      <div class="subtitle">Project developer and designer.</div>
-    </div>
-  </section>
+        <section class="top" style="text-align: center;">
+          <div>
+            <div class="kicker">About</div>
+            <div class="title">Credits</div>
+            <div class="subtitle">Developer and creator of the project.</div>
+          </div>
+        </section>
 
-  <div class="credits-grid" style="display: flex; justify-content: center; margin-top: 30px;">
-    <div class="credit-card" style="max-width: 420px; width: 100%;">
-      <div class="avatar-wrapper">
-        <img src="https://github.com/nexgen999.png" class="avatar-img" alt="nexgen999">
+        <div class="credits-grid" style="display: flex; justify-content: center; margin-top: 30px;">
+          <div class="credit-card" style="max-width: 420px; width: 100%;">
+            <div class="avatar-wrapper">
+              <img src="https://github.com/nexgen999.png" class="avatar-img" alt="nexgen999">
+            </div>
+            <div class="dev-name">nexgen999</div>
+            <div class="dev-role">Lead Developer & Ecosystem Designer</div>
+            <a href="https://github.com/nexgen999" target="_blank" class="handle-btn">@nexgen999</a>
+          </div>
+        </div>
+
+        <div class="credits-footer-text" style="text-align: center; color: #3d536b; font-size: 12px; margin-top: 60px;">
+          evoX WebUI Manager · PS5 Edition
+        </div>
       </div>
-      <div class="dev-name">nexgen999</div>
-      <div class="dev-role">Lead Developer & Ecosystem Architect</div>
-      <a href="https://github.com/nexgen999" target="_blank" class="handle-btn">@nexgen999</a>
-    </div>
-  </div>
-
-  <div class="credits-footer-text" style="text-align: center; color: #3d536b; font-size: 12px; margin-top: 60px;">
-    evoX WebUI Manager · PS5 Edition
-  </div>
-</div>
 
     </div>
   </main>
@@ -238,20 +238,20 @@ function escapeHtml(v=""){
 
 function relativeDate(date){
   const ms = Date.now() - date.getTime();
-  if(isNaN(ms)) return "Récemment";
-  if(ms < 60000) return "à l'instant";
-  if(ms < 3600000) return `il y a ${Math.floor(ms/60000)} min`;
-  if(ms < 86400000) return `il y a ${Math.floor(ms/3600000)} h`;
-  if(ms < 604800000) return `il y a ${Math.floor(ms/86400000)} j`;
-  return date.toLocaleDateString("fr-FR", {day:"2-digit", month:"short", year:"numeric"});
+  if(isNaN(ms)) return "Recently";
+  if(ms < 60000) return "just now";
+  if(ms < 3600000) return `${Math.floor(ms/60000)}m ago`;
+  if(ms < 86400000) return `${Math.floor(ms/3600000)}h ago`;
+  if(ms < 604800000) return `${Math.floor(ms/86400000)}d ago`;
+  return date.toLocaleDateString("en-US", {day:"2-digit", month:"short", year:"numeric"});
 }
 
 function fullDate(date){
-  if(isNaN(date.getTime())) return "Date inconnue";
-  return date.toLocaleString("fr-FR", {day:"2-digit", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit"});
+  if(isNaN(date.getTime())) return "Unknown date";
+  return date.toLocaleString("en-US", {day:"2-digit", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit"});
 }
 
-// Utilisation du flux ATOM de GitHub converti via rss2json (contourne les limites 403 API)
+// Convert GitHub ATOM feed via rss2json (bypasses 403 API rate limits)
 async function fetchGitHubAtom(source, categoryName){
   const atomUrl = `${source.url.replace(/\/$/, "")}/releases.atom`;
   const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(atomUrl)}`;
@@ -271,10 +271,10 @@ async function fetchGitHubAtom(source, categoryName){
       title: item.title,
       date: new Date(item.pubDate.replace(' ', 'T')),
       link: item.link,
-      content: item.content || "<p>Aucune description disponible.</p>"
+      content: item.content || "<p>No description available.</p>"
     }));
   } catch(e) {
-    console.warn("Erreur chargement Atom:", source.name, e);
+    console.warn("Error loading Atom:", source.name, e);
     return [];
   }
 }
@@ -323,7 +323,7 @@ function renderSidebar(){
 
   const all = document.createElement("button");
   all.className = (activeFilter.type === "all" && currentTab === "news") ? "active" : "";
-  all.innerHTML = `<span class="feed-dot"></span><span>Tous les flux</span>`;
+  all.innerHTML = `<span class="feed-dot"></span><span>All Feeds</span>`;
   all.onclick = selectAll;
   nav.appendChild(all);
 
@@ -369,7 +369,7 @@ function renderNews(){
   $("article-count").textContent = `${visible.length} article${visible.length > 1 ? "s" : ""}`;
 
   if(!visible.length){
-    list.innerHTML = `<div class="empty">Aucune release trouvée pour ce filtre.</div>`;
+    list.innerHTML = `<div class="empty">No releases found for this filter.</div>`;
     return;
   }
 
@@ -385,7 +385,7 @@ function renderNews(){
         <div class="news-title">${escapeHtml(a.title)}</div>
         <div class="release-body">${a.content}</div>
         <div class="news-footer">
-          <a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">Consulter sur GitHub →</a>
+          <a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">View on GitHub →</a>
         </div>
       </article>
     `;
@@ -394,7 +394,7 @@ function renderNews(){
 
 async function loadAll(){
   renderSidebar();
-  $("news-list").innerHTML = `<div class="loading">Chargement des releases en cours…</div>`;
+  $("news-list").innerHTML = `<div class="loading">Loading releases…</div>`;
   
   const tasks = [];
   CATEGORIES.forEach(cat => {
@@ -405,7 +405,7 @@ async function loadAll(){
 
   const uniqueTasks = Array.from(new Map(tasks.map(t => [t.feed.url, t])).values());
 
-  // Traitement par lots de 3 pour un chargement fluide
+  // Batching 3 by 3 for smooth rendering
   const batchSize = 3;
   let fetchedArticles = [];
   
@@ -417,7 +417,7 @@ async function loadAll(){
     renderNews();
   }
 
-  $("last-update").textContent = `Mis à jour ${new Date().toLocaleTimeString("fr-FR", {hour:"2-digit", minute:"2-digit"})}`;
+  $("last-update").textContent = `Updated ${new Date().toLocaleTimeString("en-US", {hour:"2-digit", minute:"2-digit"})}`;
 }
 
 $("logo-btn").onclick = () => switchTab("news");
