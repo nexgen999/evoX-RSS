@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>evoX RSS News</title>
+<style>
+:root{--bg:#020711;--panel:#07111f;--panel2:#091827;--line:#12345a;--blue:#00aaff;--blue2:#006eff;--text:#f4f8ff;--muted:#7e91aa}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--text);background:var(--bg)}
+body{background:radial-gradient(circle at 75% 10%,#06325c55,transparent 32%),radial-gradient(circle at 90% 85%,#006eff22,transparent 28%),#020711}
+.app{height:100vh;display:grid;grid-template-columns:250px 1fr;overflow:hidden}
+.sidebar{border-right:1px solid #0c2b4b;background:#030a14ee;padding:22px 14px;display:flex;flex-direction:column;height:100vh;overflow-y:auto}
+.logo{font-size:34px;font-weight:800;letter-spacing:-2px;padding:0 14px 25px;cursor:pointer}
+.logo span{color:var(--blue)}
+.side-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;padding:0 14px 9px}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav button{width:100%;display:flex;gap:10px;align-items:center;color:#aebed1;background:transparent;border:0;text-align:left;padding:10px 12px;border-radius:10px;transition:.2s;cursor:pointer;font-size:13px}
+.nav button:hover,.nav button.active{color:#fff;background:linear-gradient(90deg,#006eff35,#00aaff08);box-shadow:inset 2px 0 var(--blue)}
+.nav button.category{font-weight:700}
+.nav button.feed{padding-left:25px;font-size:12px}
+.nav .feed-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);box-shadow:0 0 8px #00aaff;flex:none}
+.nav .chevron{margin-left:auto;color:var(--muted);font-size:12px}
+.icon-img{width:18px;height:18px;object-fit:contain;flex-none:none}
+
+.sidebar-footer{margin-top:auto;border-top:1px solid #0c2b4b;padding-top:14px}
+.credit-nav-btn{width:100%;display:flex;gap:10px;align-items:center;color:#aebed1;background:transparent;border:1px solid transparent;text-align:left;padding:10px 12px;border-radius:10px;transition:.2s;cursor:pointer;font-size:13px}
+.credit-nav-btn:hover,.credit-nav-btn.active{color:#fff;background:linear-gradient(90deg,#006eff35,#00aaff08);box-shadow:inset 2px 0 var(--blue);border-color:#12345a}
+
+main{height:100vh;overflow-y:auto;padding:28px clamp(18px,4vw,55px);min-width:0}
+.main-wrapper{max-width:1250px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:24px}
+.kicker{color:var(--blue);font-size:12px;letter-spacing:3px;text-transform:uppercase}
+.title{font-size:clamp(34px,5vw,58px);line-height:1;margin:8px 0 9px;letter-spacing:-3px}
+.subtitle{color:var(--muted);font-size:14px}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{background:#030a14;border:1px solid var(--line);color:#d9e8f8;padding:9px 13px;border-radius:10px;cursor:pointer;font-size:12px}
+.btn:hover,.btn.active{border-color:var(--blue);color:#fff;background:#007bff20}
+.news-panel{background:#040d18cc;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.panel-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.panel-head h2{margin:0;font-size:15px}
+.panel-head span{font-size:11px;color:var(--muted)}
+.news-list{display:flex;flex-direction:column}
+.news-item{padding:19px 21px;border-bottom:1px solid #0d2842;transition:.18s}
+.news-item:last-child{border-bottom:0}
+.news-item:hover{background:#071827}
+.meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-bottom:8px}
+.source{color:var(--blue);background:#007bff15;border:1px solid #1477b933;padding:3px 7px;border-radius:6px;font-weight:700;display:inline-flex;align-items:center;gap:6px}
+.badge{color:#8bd5ff;background:#007bff18;border:1px solid #007bff35;padding:3px 7px;border-radius:6px}
+.news-title{font-size:19px;font-weight:700;line-height:1.35;margin-bottom:8px}
+.release-body{margin-top:16px;padding-top:16px;border-top:1px solid #12345a;font-size:13px;line-height:1.7;color:#d2deeb;overflow-wrap:anywhere}
+.release-body img{max-width:100%;height:auto;border-radius:8px}
+.release-body h1,.release-body h2,.release-body h3{color:#fff}
+.release-body a{color:var(--blue)}
+.release-body pre,.release-body code{white-space:pre-wrap;overflow-wrap:anywhere;background:#020711;border:1px solid #12345a;border-radius:7px;padding:8px}
+.news-footer{display:flex;align-items:center;gap:8px;margin-top:14px}
+.news-footer a{display:inline-block;text-decoration:none;background:#007bff12;border:1px solid #174d78;color:#bfe7ff;padding:7px 10px;border-radius:8px;font-size:11px;cursor:pointer}
+.news-footer a:hover{border-color:var(--blue);background:#007bff25;color:#fff}
+
+.credits-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;margin-top:30px}
+.credit-card{background:#040d1888;border:1px solid var(--line);border-radius:20px;padding:40px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:.3s}
+.credit-card:hover{border-color:var(--blue);transform:translateY(-2px)}
+.avatar-wrapper{width:110px;height:110px;border-radius:50%;padding:3px;background:linear-gradient(135deg,var(--blue),#a100ff);margin-bottom:20px}
+.avatar-img{width:100%;height:100%;border-radius:50%;object-fit:cover;background:#020711}
+.dev-name{font-size:22px;font-weight:800;color:#fff;margin-bottom:8px}
+.dev-role{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.4;max-width:260px}
+.handle-btn{background:#006eff20;border:1px solid #006eff55;color:var(--blue);padding:8px 18px;border-radius:10px;font-size:12px;text-decoration:none;transition:.2s}
+.handle-btn:hover{background:var(--blue);color:#fff}
+.credits-footer-text{text-align:center;color:#3d536b;font-size:12px;margin-top:60px}
+
+.hidden{display:none !important}
+.empty,.loading{padding:45px 25px;text-align:center;color:var(--muted)}
+
+@media(max-width:750px){
+  .app{grid-template-columns:1fr;height:auto;overflow:visible}
+  .sidebar{height:auto;border-right:0;border-bottom:1px solid #0c2b4b;padding:12px;overflow:visible}
+  .logo{padding:0 8px 12px;font-size:28px}
+  .nav{max-height:260px;overflow-y:auto}
+  main{height:auto;overflow:visible;padding:20px 12px}
+  .top{flex-direction:column}
+  .title{font-size:40px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo" id="logo-btn">evo<span>X</span></div>
+    <div class="side-title">Flux RSS</div>
+    <nav class="nav" id="feed-nav"></nav>
+    <div class="sidebar-footer">
+      <button class="credit-nav-btn" id="credits-tab-btn">
+        <img src="https://img.icons8.com/color/48/star--v1.png" class="icon-img" alt="star">
+        <span>Crédits</span>
+      </button>
+    </div>
+  </aside>
+
+  <main>
+    <div class="main-wrapper">
+      <div id="view-news">
+        <section class="top">
+          <div>
+            <div class="kicker">evoX ecosystem</div>
+            <div class="title">evoX RSS News</div>
+            <div class="subtitle">The latest releases from your repositories, from newest to oldest.</div>
+          </div>
+          <div class="actions">
+            <span class="btn" id="last-update">Loading…</span>
+            <button class="btn" id="refresh">↻ Refresh</button>
+          </div>
+        </section>
+
+        <section class="news-panel">
+          <div class="panel-head">
+            <h2>News</h2>
+            <span id="article-count">—</span>
+          </div>
+          <div class="news-list" id="news-list"></div>
+        </section>
+      </div>
+
+      <div id="view-credits" class="hidden">
+  <section class="top" style="text-align: center;">
+    <div>
+      <div class="kicker">About</div>
+      <div class="title">Crédits</div>
+      <div class="subtitle">Project developer and designer.</div>
+    </div>
+  </section>
+
+  <div class="credits-grid" style="display: flex; justify-content: center; margin-top: 30px;">
+    <div class="credit-card" style="max-width: 420px; width: 100%;">
+      <div class="avatar-wrapper">
+        <img src="https://github.com/nexgen999.png" class="avatar-img" alt="nexgen999">
+      </div>
+      <div class="dev-name">nexgen999</div>
+      <div class="dev-role">Lead Developer & Ecosystem Architect</div>
+      <a href="https://github.com/nexgen999" target="_blank" class="handle-btn">@nexgen999</a>
+    </div>
+  </div>
+
+  <div class="credits-footer-text" style="text-align: center; color: #3d536b; font-size: 12px; margin-top: 60px;">
+    evoX WebUI Manager · PS5 Edition
+  </div>
+</div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+const CATEGORIES = [
+    { 
+        name: "PS5-payload-dev",
+        icon8: "https://img.icons8.com/fluency/96/server--v1.png",
+        feeds: [
+            { name: "elfldr", url: "https://github.com/ps5-payload-dev/elfldr" },
+            { name: "ftpsrv", url: "https://github.com/ps5-payload-dev/ftpsrv" },
+            { name: "websrv", url: "https://github.com/ps5-payload-dev/websrv" },
+            { name: "klogsrv", url: "https://github.com/ps5-payload-dev/klogsrv" },
+            { name: "gdbsrv", url: "https://github.com/ps5-payload-dev/gdbsrv" },
+            { name: "shsrv", url: "https://github.com/ps5-payload-dev/shsrv" },
+            { name: "svtplay", url: "https://github.com/ps5-payload-dev/svtplay" }
+        ] 
+    },
+    { 
+        name: "PS5 DNS",
+        icon8: "https://img.icons8.com/fluency/96/dns.png",
+        feeds: [
+            { name: "nanoDNS", url: "https://github.com/drakmor/nanoDNS" },
+            { name: "chukei-dns", url: "https://github.com/Al-Azif/chukei-dns" }
+        ] 
+    },
+    { 
+        name: "HEN Loader",
+        icon8: "https://img.icons8.com/fluency/96/home.png",
+        feeds: [
+            { name: "ps5-payload-manager", url: "https://github.com/itsPLK/ps5-payload-manager" },
+            { name: "ps5-unified-autoloader", url: "https://github.com/itsPLK/ps5-unified-autoloader" },
+            { name: "ProsperoMgr", url: "https://github.com/notmaj0r/ProsperoMgr" },
+            { name: "etaHEN", url: "https://github.com/etaHEN/etaHEN" },
+            { name: "onionHEN", url: "https://github.com/aydencharles/onionHEN" },
+            { name: "PIZZA-HEN", url: "https://github.com/Michele-M-Media/PIZZA-HEN" },
+            { name: "kura", url: "https://github.com/NookieAI/kura" }
+        ] 
+    },
+    { 
+        name: "PS5 Essential",
+        icon8: "https://img.icons8.com/fluency/48/play-station--v2.png",
+        feeds: [
+            { name: "nanoDNS", url: "https://github.com/drakmor/nanoDNS" },
+            { name: "kstuff-lite_EchoStretch", url: "https://github.com/EchoStretch/kstuff-lite" },
+            { name: "kstuff-lite_drakmor", url: "https://github.com/drakmor/kstuff-lite" },
+            { name: "ShadowMountPlus", url: "https://github.com/drakmor/ShadowMountPlus" },
+            { name: "zftpd", url: "https://github.com/seregonwar/zftpd" }
+        ] 
+    },
+    { 
+        name: "PS5 Game Compatibility",
+        icon8: "https://img.icons8.com/fluency/96/settings.png",
+        feeds: [
+            { name: "BackPork", url: "https://github.com/BestPig/BackPork" },
+            { name: "ampr_emu", url: "https://github.com/drakmor/ampr_emu" },
+            { name: "apr-emu-updater", url: "https://github.com/tsuramatsu1/apr-emu-updater" }
+        ] 
+    },
+    { 
+        name: "PS5 FreeShop",
+        icon8: "https://img.icons8.com/fluency/96/shopping-bag.png",
+        feeds: [
+            { name: "Spectrum-Library", url: "https://github.com/Phoenixx1202/Spectrum-Library" },
+            { name: "Spectrum-Library-PC", url: "https://github.com/Phoenixx1202/Spectrum-Library-PC" },
+            { name: "Pegasus-dl", url: "https://github.com/pegasus-ps5/pegasus-dl" }
+        ] 
+    }
+];
+
+const PLATFORM_ICONS8 = {
+  github: "https://img.icons8.com/color/48/github--v1.png",
+  rss: "https://img.icons8.com/color/48/rss.png"
+};
+
+let articles = [];
+let activeFilter = { type: "all", value: "all" };
+let collapsedCategories = {};
+let currentTab = "news";
+
+CATEGORIES.forEach(cat => {
+  collapsedCategories[cat.name] = true;
+});
+
+const $ = id => document.getElementById(id);
+
+function escapeHtml(v=""){
+  return String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function relativeDate(date){
+  const ms = Date.now() - date.getTime();
+  if(isNaN(ms)) return "Récemment";
+  if(ms < 60000) return "à l'instant";
+  if(ms < 3600000) return `il y a ${Math.floor(ms/60000)} min`;
+  if(ms < 86400000) return `il y a ${Math.floor(ms/3600000)} h`;
+  if(ms < 604800000) return `il y a ${Math.floor(ms/86400000)} j`;
+  return date.toLocaleDateString("fr-FR", {day:"2-digit", month:"short", year:"numeric"});
+}
+
+function fullDate(date){
+  if(isNaN(date.getTime())) return "Date inconnue";
+  return date.toLocaleString("fr-FR", {day:"2-digit", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit"});
+}
+
+// Utilisation du flux ATOM de GitHub converti via rss2json (contourne les limites 403 API)
+async function fetchGitHubAtom(source, categoryName){
+  const atomUrl = `${source.url.replace(/\/$/, "")}/releases.atom`;
+  const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(atomUrl)}`;
+
+  try {
+    const res = await fetch(apiUrl);
+    if (!res.ok) return [];
+    
+    const data = await res.json();
+    if(data.status !== "ok" || !data.items) return [];
+
+    return data.items.map(item => ({
+      id: item.guid || item.link,
+      category: categoryName,
+      source: source.name,
+      sourceUrl: source.url,
+      title: item.title,
+      date: new Date(item.pubDate.replace(' ', 'T')),
+      link: item.link,
+      content: item.content || "<p>Aucune description disponible.</p>"
+    }));
+  } catch(e) {
+    console.warn("Erreur chargement Atom:", source.name, e);
+    return [];
+  }
+}
+
+function toggleCategory(name, event){
+  if(event) event.stopPropagation();
+  collapsedCategories[name] = !collapsedCategories[name];
+  renderSidebar();
+}
+
+function selectCategory(name){
+  activeFilter = { type: "category", value: name };
+  switchTab("news");
+  renderNews();
+}
+
+function selectFeed(name){
+  activeFilter = { type: "feed", value: name };
+  switchTab("news");
+  renderNews();
+}
+
+function selectAll(){
+  activeFilter = { type: "all", value: "all" };
+  switchTab("news");
+  renderNews();
+}
+
+function switchTab(tab){
+  currentTab = tab;
+  if(tab === "news"){
+    $("view-news").classList.remove("hidden");
+    $("view-credits").classList.add("hidden");
+    $("credits-tab-btn").classList.remove("active");
+  } else {
+    $("view-news").classList.add("hidden");
+    $("view-credits").classList.remove("hidden");
+    $("credits-tab-btn").classList.add("active");
+  }
+  renderSidebar();
+}
+
+function renderSidebar(){
+  const nav = $("feed-nav");
+  nav.innerHTML = "";
+
+  const all = document.createElement("button");
+  all.className = (activeFilter.type === "all" && currentTab === "news") ? "active" : "";
+  all.innerHTML = `<span class="feed-dot"></span><span>Tous les flux</span>`;
+  all.onclick = selectAll;
+  nav.appendChild(all);
+
+  CATEGORIES.forEach(cat => {
+    const head = document.createElement("button");
+    const isActive = (activeFilter.type === "category" && activeFilter.value === cat.name && currentTab === "news");
+    head.className = "category " + (isActive ? "active" : "");
+    
+    const iconImg = cat.icon8 ? `<img src="${cat.icon8}" class="icon-img" alt="icon">` : "";
+    const toggleIcon = collapsedCategories[cat.name] ? "▸" : "▾";
+    
+    head.innerHTML = `<span class="toggle-btn" onclick="toggleCategory('${escapeHtml(cat.name)}', event)">${toggleIcon}</span>${iconImg}<span>${escapeHtml(cat.name)}</span><span class="chevron">${cat.feeds.length}</span>`;
+    head.onclick = () => selectCategory(cat.name);
+    nav.appendChild(head);
+
+    if(!collapsedCategories[cat.name]){
+      cat.feeds.forEach(feed => {
+        const b = document.createElement("button");
+        const isFeedActive = (activeFilter.type === "feed" && activeFilter.value === feed.name && currentTab === "news");
+        b.className = "feed " + (isFeedActive ? "active" : "");
+        b.innerHTML = `<span class="feed-dot"></span><span>${escapeHtml(feed.name)}</span>`;
+        b.title = feed.url;
+        b.onclick = () => selectFeed(feed.name);
+        nav.appendChild(b);
+      });
+    }
+  });
+}
+
+function visibleArticles(){
+  if(activeFilter.type === "category"){
+    return articles.filter(a => a.category === activeFilter.value);
+  }
+  if(activeFilter.type === "feed"){
+    return articles.filter(a => a.source === activeFilter.value);
+  }
+  return articles;
+}
+
+function renderNews(){
+  const list = $("news-list");
+  const visible = visibleArticles();
+  $("article-count").textContent = `${visible.length} article${visible.length > 1 ? "s" : ""}`;
+
+  if(!visible.length){
+    list.innerHTML = `<div class="empty">Aucune release trouvée pour ce filtre.</div>`;
+    return;
+  }
+
+  list.innerHTML = visible.map(a => {
+    return `
+      <article class="news-item">
+        <div class="meta">
+          <span class="source"><img src="${PLATFORM_ICONS8.github}" class="icon-img" alt="forge"> ${escapeHtml(a.source)}</span>
+          <span class="badge">Release</span>
+          <span>${fullDate(a.date)}</span>
+          <span>· ${relativeDate(a.date)}</span>
+        </div>
+        <div class="news-title">${escapeHtml(a.title)}</div>
+        <div class="release-body">${a.content}</div>
+        <div class="news-footer">
+          <a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">Consulter sur GitHub →</a>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+async function loadAll(){
+  renderSidebar();
+  $("news-list").innerHTML = `<div class="loading">Chargement des releases en cours…</div>`;
+  
+  const tasks = [];
+  CATEGORIES.forEach(cat => {
+    cat.feeds.forEach(feed => {
+      tasks.push({ feed, categoryName: cat.name });
+    });
+  });
+
+  const uniqueTasks = Array.from(new Map(tasks.map(t => [t.feed.url, t])).values());
+
+  // Traitement par lots de 3 pour un chargement fluide
+  const batchSize = 3;
+  let fetchedArticles = [];
+  
+  for (let i = 0; i < uniqueTasks.length; i += batchSize) {
+    const batch = uniqueTasks.slice(i, i + batchSize);
+    const results = await Promise.all(batch.map(t => fetchGitHubAtom(t.feed, t.categoryName)));
+    fetchedArticles.push(...results.flat());
+    articles = fetchedArticles.sort((a,b) => b.date - a.date);
+    renderNews();
+  }
+
+  $("last-update").textContent = `Mis à jour ${new Date().toLocaleTimeString("fr-FR", {hour:"2-digit", minute:"2-digit"})}`;
+}
+
+$("logo-btn").onclick = () => switchTab("news");
+$("credits-tab-btn").onclick = () => switchTab("credits");
+$("refresh").onclick = loadAll;
+
+loadAll();
+</script>
+</body>
+</html>
